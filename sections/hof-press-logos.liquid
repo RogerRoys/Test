@@ -1,0 +1,124 @@
+{%- comment -%}
+  House of Flair · As seen in (Option 1, hairline row)
+  Label with divider on the left, logos evenly spaced. 2×2 grid on mobile.
+  Roys Studio
+{%- endcomment -%}
+
+{%- liquid
+  assign s = section.settings
+-%}
+
+{%- if s.load_font -%}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap">
+{%- endif -%}
+
+<style>
+  #shopify-section-{{ section.id }} .hof-press{
+    --hof-bg: {{ s.bg_color }};
+    --hof-ink: {{ s.ink_color }};
+    --hof-line: {{ s.line_color }};
+    background: var(--hof-bg); color: var(--hof-ink);
+    padding: {{ s.padding }}px 72px;
+    {% if s.show_lines %}border-top: 1px solid var(--hof-line); border-bottom: 1px solid var(--hof-line);{% endif %}
+  }
+  #shopify-section-{{ section.id }} .hof-press__row{
+    display:flex; align-items:center; gap: 48px; max-width: {{ s.max_width }}px; margin: 0 auto;
+  }
+  #shopify-section-{{ section.id }} .hof-press__label{
+    {% if s.load_font %}font-family: "Bebas Neue", "Oswald", "Arial Narrow", Impact, sans-serif;{% else %}font-family: var(--font-heading-family, inherit);{% endif %}
+    font-weight: 400; font-size: 30px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+    padding-right: 48px; border-right: 1px solid var(--hof-line); margin: 0;
+  }
+  #shopify-section-{{ section.id }} .hof-press__logos{
+    display:flex; flex: 1; justify-content: space-around; align-items:center; gap: 40px; flex-wrap: wrap;
+  }
+  #shopify-section-{{ section.id }} .hof-press__logo{ display:flex; align-items:center; opacity: {{ s.opacity | divided_by: 100.0 }}; transition: opacity .2s ease; }
+  #shopify-section-{{ section.id }} .hof-press__logo:hover{ opacity: 1; }
+  #shopify-section-{{ section.id }} .hof-press__logo img{ display:block; width:auto; height: var(--logo-h); max-width: 180px; object-fit: contain; }
+
+  @media (max-width: 749px){
+    #shopify-section-{{ section.id }} .hof-press{ padding: {{ s.padding | times: 0.7 | round }}px 24px; }
+    #shopify-section-{{ section.id }} .hof-press__row{ flex-direction: column; gap: 22px; }
+    #shopify-section-{{ section.id }} .hof-press__label{ border: 0; padding: 0; font-size: 24px; }
+    #shopify-section-{{ section.id }} .hof-press__logos{
+      display:grid; grid-template-columns: 1fr 1fr; gap: 26px 20px; width: 100%; justify-items: center;
+    }
+    #shopify-section-{{ section.id }} .hof-press__logo img{ height: calc(var(--logo-h) * 0.8); max-width: 140px; }
+  }
+</style>
+
+<section class="hof-press" aria-label="{{ s.label | escape }}">
+  <div class="hof-press__row">
+    {%- if s.label != blank -%}
+      <p class="hof-press__label">{{ s.label | escape }}</p>
+    {%- endif -%}
+    <div class="hof-press__logos">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign tag = 'span'
+          if block.settings.link != blank
+            assign tag = 'a'
+          endif
+          assign logo_alt = block.settings.name
+          if block.settings.image and block.settings.image.alt != blank
+            assign logo_alt = block.settings.image.alt
+          endif
+        -%}
+        <{{ tag }} class="hof-press__logo" style="--logo-h: {{ block.settings.height }}px"
+          {%- if tag == 'a' %} href="{{ block.settings.link }}" target="_blank" rel="noopener"{% endif %} {{ block.shopify_attributes }}>
+          {%- if block.settings.image -%}
+            {{ block.settings.image | image_url: width: 400 | image_tag: loading: 'lazy', widths: '200, 400', alt: logo_alt }}
+          {%- else -%}
+            <span>{{ block.settings.name | default: 'Logo' | escape }}</span>
+          {%- endif -%}
+        </{{ tag }}>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "HOF · As seen in",
+  "tag": "section",
+  "class": "section-hof-press",
+  "max_blocks": 8,
+  "settings": [
+    { "type": "text", "id": "label", "label": "Label", "default": "As seen in" },
+    { "type": "range", "id": "padding", "label": "Vertical padding", "min": 20, "max": 80, "step": 4, "unit": "px", "default": 40 },
+    { "type": "range", "id": "max_width", "label": "Maximum content width", "min": 1000, "max": 1600, "step": 20, "unit": "px", "default": 1400 },
+    { "type": "range", "id": "opacity", "label": "Logo opacity", "min": 40, "max": 100, "step": 5, "unit": "%", "default": 80 },
+    { "type": "checkbox", "id": "show_lines", "label": "Show hairlines above and below", "default": true },
+    { "type": "checkbox", "id": "load_font", "label": "Use Bebas Neue for the label", "default": true },
+    { "type": "header", "content": "Colours" },
+    { "type": "color", "id": "bg_color", "label": "Background", "default": "#FCF7EF" },
+    { "type": "color", "id": "ink_color", "label": "Text", "default": "#2A2320" },
+    { "type": "color", "id": "line_color", "label": "Hairlines", "default": "#E3D9C8" }
+  ],
+  "blocks": [
+    {
+      "type": "logo",
+      "name": "Logo",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Logo image", "info": "Transparent PNG or SVG, dark on transparent." },
+        { "type": "text", "id": "name", "label": "Publication name", "info": "Used as alt text." },
+        { "type": "url", "id": "link", "label": "Link to article (optional)" },
+        { "type": "range", "id": "height", "label": "Logo height", "min": 16, "max": 60, "step": 2, "unit": "px", "default": 30 }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "HOF · As seen in",
+      "blocks": [
+        { "type": "logo", "settings": { "name": "Marie Claire", "height": 30 } },
+        { "type": "logo", "settings": { "name": "What's On", "height": 34 } },
+        { "type": "logo", "settings": { "name": "AD", "height": 42 } },
+        { "type": "logo", "settings": { "name": "Mojeh", "height": 30 } }
+      ]
+    }
+  ]
+}
+{% endschema %}

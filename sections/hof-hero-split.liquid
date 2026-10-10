@@ -1,0 +1,191 @@
+{%- comment -%}
+  House of Flair · Split hero (Option A, refined)
+  Text panel left, full-height image right. Image stacks on top on mobile.
+  Roys Studio
+{%- endcomment -%}
+
+{%- liquid
+  assign s = section.settings
+  assign img = s.image
+  assign img_alt = s.heading_line1 | append: ' ' | append: s.heading_line2 | strip
+  if img and img.alt != blank
+    assign img_alt = img.alt
+  endif
+  assign img_mobile_alt = img_alt
+  if s.image_mobile and s.image_mobile.alt != blank
+    assign img_mobile_alt = s.image_mobile.alt
+  endif
+-%}
+
+{%- if s.load_font -%}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap">
+{%- endif -%}
+
+<style>
+  #shopify-section-{{ section.id }} .hof-hero{
+    --hof-bg: {{ s.bg_color }};
+    --hof-ink: {{ s.ink_color }};
+    --hof-accent: {{ s.accent_color }};
+    --hof-btn: {{ s.button_color }};
+    --hof-btn-text: {{ s.button_text_color }};
+    --hof-eyebrow: {{ s.eyebrow_color }};
+    display:grid;
+    grid-template-columns: {{ s.text_width }}fr {{ 100 | minus: s.text_width }}fr;
+    min-height: {{ s.min_height }}px;
+    background: var(--hof-bg);
+    color: var(--hof-ink);
+  }
+  #shopify-section-{{ section.id }} .hof-hero--image-left .hof-hero__text{ order: 2; }
+  #shopify-section-{{ section.id }} .hof-hero__text{
+    display:flex; flex-direction:column; justify-content:center; gap: 28px;
+    padding: 64px 72px; position: relative;
+  }
+  #shopify-section-{{ section.id }} .hof-hero__text::after{
+    content:""; position:absolute; left:72px; bottom:40px; width:64px; height:3px; background: var(--hof-accent);
+  }
+  #shopify-section-{{ section.id }} .hof-hero__eyebrow{
+    font-size: 12px; letter-spacing: .22em; text-transform: uppercase; font-weight: 500; color: var(--hof-eyebrow); margin:0;
+  }
+  #shopify-section-{{ section.id }} .hof-hero__heading{
+    {% if s.load_font %}font-family: "Bebas Neue", "Oswald", "Arial Narrow", Impact, sans-serif;{% else %}font-family: var(--font-heading-family, inherit);{% endif %}
+    font-weight: 400; line-height: .92; letter-spacing: .01em; text-transform: uppercase;
+    font-size: {{ s.heading_size }}px; color: var(--hof-accent); margin:0;
+  }
+  #shopify-section-{{ section.id }} .hof-hero__heading span{ display:block; color: var(--hof-ink); }
+  #shopify-section-{{ section.id }} .hof-hero__sub{
+    font-size: 18px; font-weight: 300; line-height: 1.6; max-width: 38ch; margin:0;
+  }
+  #shopify-section-{{ section.id }} .hof-hero__btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size: 14px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; text-decoration:none;
+    color: var(--hof-btn-text); background: var(--hof-btn); border-radius: 999px; padding: 18px 42px;
+    transition: transform .2s ease, filter .2s ease;
+  }
+  #shopify-section-{{ section.id }} .hof-hero__btn:hover{ filter: brightness(.95); transform: translateY(-1px); }
+  #shopify-section-{{ section.id }} .hof-hero__media{ position:relative; overflow:hidden; min-height: 360px; }
+  #shopify-section-{{ section.id }} .hof-hero__media img{
+    display:block; width:100%; height:100%; object-fit:cover;
+    object-position: {{ s.image_position }};
+  }
+  #shopify-section-{{ section.id }} .hof-hero__media .hof-hero__img--mobile{ display:none; }
+  #shopify-section-{{ section.id }} .hof-hero__placeholder{ width:100%; height:100%; min-height:360px; background:#e9dfcf; }
+  #shopify-section-{{ section.id }} .hof-hero__chip{
+    position:absolute; left:28px; bottom:28px; display:flex; align-items:center; gap:10px;
+    background: var(--hof-bg); color: var(--hof-ink);
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase; padding: 12px 18px;
+  }
+  #shopify-section-{{ section.id }} .hof-hero__chip::before{
+    content:""; width:8px; height:8px; border-radius:50%; background: {{ s.chip_dot_color }};
+  }
+
+  @media (max-width: 989px){
+    #shopify-section-{{ section.id }} .hof-hero__text{ padding: 48px 40px; }
+    #shopify-section-{{ section.id }} .hof-hero__text::after{ left:40px; }
+    #shopify-section-{{ section.id }} .hof-hero__heading{ font-size: {{ s.heading_size | times: 0.78 | round }}px; }
+  }
+  @media (max-width: 749px){
+    #shopify-section-{{ section.id }} .hof-hero{ grid-template-columns: 1fr; min-height: 0; }
+    #shopify-section-{{ section.id }} .hof-hero__media{ order: -1; aspect-ratio: 4 / 3.3; min-height: 0; }
+    #shopify-section-{{ section.id }} .hof-hero--image-left .hof-hero__text{ order: 0; }
+    {% if s.image_mobile %}
+    #shopify-section-{{ section.id }} .hof-hero__media .hof-hero__img--desktop{ display:none; }
+    #shopify-section-{{ section.id }} .hof-hero__media .hof-hero__img--mobile{ display:block; }
+    {% endif %}
+    #shopify-section-{{ section.id }} .hof-hero__text{ padding: 36px 24px 44px; gap: 18px; }
+    #shopify-section-{{ section.id }} .hof-hero__text::after{ display:none; }
+    #shopify-section-{{ section.id }} .hof-hero__heading{ font-size: {{ s.heading_size_mobile }}px; }
+    #shopify-section-{{ section.id }} .hof-hero__sub{ font-size: 16px; }
+    #shopify-section-{{ section.id }} .hof-hero__btn{ width:100%; padding: 17px 24px; }
+    #shopify-section-{{ section.id }} .hof-hero__chip{ left:16px; bottom:16px; padding: 9px 12px; font-size: 10px; }
+  }
+</style>
+
+<section class="hof-hero{% if s.image_side == 'left' %} hof-hero--image-left{% endif %}">
+  <div class="hof-hero__text">
+    {%- if s.eyebrow != blank -%}
+      <p class="hof-hero__eyebrow">{{ s.eyebrow | escape }}</p>
+    {%- endif -%}
+
+    {%- if s.heading_line1 != blank or s.heading_line2 != blank -%}
+      <h1 class="hof-hero__heading">
+        {{ s.heading_line1 | escape }}
+        {%- if s.heading_line2 != blank -%}<span>{{ s.heading_line2 | escape }}</span>{%- endif -%}
+      </h1>
+    {%- endif -%}
+
+    {%- if s.text != blank -%}
+      <div class="hof-hero__sub">{{ s.text }}</div>
+    {%- endif -%}
+
+    {%- if s.button_label != blank -%}
+      <div><a class="hof-hero__btn" href="{{ s.button_link | default: '#' }}">{{ s.button_label | escape }}</a></div>
+    {%- endif -%}
+  </div>
+
+  <div class="hof-hero__media">
+    {%- if img -%}
+      {{ img | image_url: width: 1800 | image_tag: loading: 'eager', fetchpriority: 'high', class: 'hof-hero__img--desktop', widths: '600, 900, 1200, 1500, 1800', sizes: '(max-width: 749px) 100vw, 55vw', alt: img_alt }}
+      {%- if s.image_mobile -%}
+        {{ s.image_mobile | image_url: width: 1200 | image_tag: loading: 'eager', class: 'hof-hero__img--mobile', widths: '400, 600, 800, 1200', sizes: '100vw', alt: img_mobile_alt }}
+      {%- endif -%}
+    {%- else -%}
+      <div class="hof-hero__placeholder">{{ 'lifestyle-1' | placeholder_svg_tag }}</div>
+    {%- endif -%}
+
+    {%- if s.chip_text != blank -%}
+      <span class="hof-hero__chip">{{ s.chip_text | escape }}</span>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "HOF · Split hero",
+  "tag": "section",
+  "class": "section-hof-hero",
+  "settings": [
+    { "type": "header", "content": "Content" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Homeware · Tableware · Gifting" },
+    { "type": "text", "id": "heading_line1", "label": "Heading line 1 (accent colour)", "default": "The joyful art" },
+    { "type": "text", "id": "heading_line2", "label": "Heading line 2 (ink colour)", "default": "of receiving" },
+    { "type": "richtext", "id": "text", "label": "Text", "default": "<p>Collections designed with passion and handcrafted with care. Where homeware becomes a tale to share.</p>" },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "Explore" },
+    { "type": "url", "id": "button_link", "label": "Button link" },
+    { "type": "text", "id": "chip_text", "label": "Chip text on image", "default": "Handcrafted with care", "info": "Leave empty to hide." },
+
+    { "type": "header", "content": "Image" },
+    { "type": "image_picker", "id": "image", "label": "Image", "info": "Recommended 1400 × 1200 or larger." },
+    { "type": "image_picker", "id": "image_mobile", "label": "Mobile image (optional)", "info": "Shown under 750px instead of the main image." },
+    { "type": "select", "id": "image_side", "label": "Image side", "options": [
+      { "value": "right", "label": "Right" },
+      { "value": "left", "label": "Left" }
+    ], "default": "right" },
+    { "type": "select", "id": "image_position", "label": "Image focal point", "options": [
+      { "value": "50% 50%", "label": "Centre" },
+      { "value": "50% 28%", "label": "Centre top" },
+      { "value": "50% 75%", "label": "Centre bottom" },
+      { "value": "30% 50%", "label": "Left" },
+      { "value": "70% 50%", "label": "Right" }
+    ], "default": "50% 28%" },
+
+    { "type": "header", "content": "Layout" },
+    { "type": "range", "id": "text_width", "label": "Text panel width", "min": 35, "max": 55, "step": 1, "unit": "%", "default": 46 },
+    { "type": "range", "id": "min_height", "label": "Desktop minimum height", "min": 480, "max": 820, "step": 10, "unit": "px", "default": 640 },
+    { "type": "range", "id": "heading_size", "label": "Heading size (desktop)", "min": 48, "max": 120, "step": 2, "unit": "px", "default": 80 },
+    { "type": "range", "id": "heading_size_mobile", "label": "Heading size (mobile)", "min": 36, "max": 80, "step": 2, "unit": "px", "default": 58 },
+    { "type": "checkbox", "id": "load_font", "label": "Use Bebas Neue for the heading", "default": true, "info": "Untick to use the theme heading font instead." },
+
+    { "type": "header", "content": "Colours" },
+    { "type": "color", "id": "bg_color", "label": "Background", "default": "#FCF7EF" },
+    { "type": "color", "id": "ink_color", "label": "Text", "default": "#2A2320" },
+    { "type": "color", "id": "accent_color", "label": "Heading accent", "default": "#E8601C" },
+    { "type": "color", "id": "eyebrow_color", "label": "Eyebrow", "default": "#C4552A" },
+    { "type": "color", "id": "button_color", "label": "Button", "default": "#F58A5A" },
+    { "type": "color", "id": "button_text_color", "label": "Button text", "default": "#FFFFFF" },
+    { "type": "color", "id": "chip_dot_color", "label": "Chip dot", "default": "#6F7A3D" }
+  ],
+  "presets": [ { "name": "HOF · Split hero" } ]
+}
+{% endschema %}
