@@ -674,17 +674,11 @@
         {%- endif -%}{%- endfor -%}
 
         {%- liquid
-          assign detail_layout = product.metafields.custom.product_detail_layout.value
           assign show_description = true
-          if section.settings.hide_description_with_layout and detail_layout != blank
+          if section.settings.hide_description_with_layout and product.metafields.custom.product_detail_layout.value != blank
             assign show_description = false
           endif
         -%}
-        {%- if detail_layout != blank -%}
-          <div class="hpdp-description hpdp-detail-layout">
-            {%- if detail_layout contains '<' -%}{{ detail_layout }}{%- else -%}{{ detail_layout | newline_to_br }}{%- endif -%}
-          </div>
-        {%- endif -%}
         {%- if show_description -%}
           <div class="hpdp-description">{{ product.description }}</div>
         {%- endif -%}
@@ -1218,7 +1212,7 @@
     { "type": "color_scheme", "id": "sticky_color_scheme", "label": "Sticky add to cart color scheme", "default": "scheme-1" },
     { "type": "checkbox", "id": "show_dynamic_checkout", "label": "Show dynamic checkout button", "default": true },
     { "type": "checkbox", "id": "show_payment_icons", "label": "Show payment icons", "default": true },
-    { "type": "checkbox", "id": "hide_description_with_layout", "label": "Hide description when Product Detail Layout is filled", "info": "ON: products with the custom.product_detail_layout metafield show only that content. OFF: both the metafield content and the description show.", "default": true },
+    { "type": "checkbox", "id": "hide_description_with_layout", "label": "Hide description when Product Detail Layout is filled", "info": "ON: the description is hidden on products that have the custom.product_detail_layout metafield filled. OFF: the description always shows.", "default": true },
     { "type": "text", "id": "faq_eyebrow", "label": "FAQ eyebrow (falls back to first collection)" },
     { "type": "text", "id": "faq_title", "label": "FAQ title", "default": "Common Questions" }
   ],
