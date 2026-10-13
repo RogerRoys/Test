@@ -673,7 +673,13 @@
           <div class="hpdp-custom hpdp-custom--below-payments" {{ block.shopify_attributes }}>{{ block.settings.custom_liquid }}</div>
         {%- endif -%}{%- endfor -%}
 
-        {%- if section.settings.show_description -%}
+        {%- liquid
+          assign show_description = section.settings.show_description
+          if section.settings.hide_description_with_layout and product.metafields.custom.product_detail_layout.value != blank
+            assign show_description = false
+          endif
+        -%}
+        {%- if show_description -%}
           <div class="hpdp-description">{{ product.description }}</div>
         {%- endif -%}
 
@@ -1207,6 +1213,7 @@
     { "type": "checkbox", "id": "show_dynamic_checkout", "label": "Show dynamic checkout button", "default": true },
     { "type": "checkbox", "id": "show_payment_icons", "label": "Show payment icons", "default": true },
     { "type": "checkbox", "id": "show_description", "label": "Show product description", "default": true },
+    { "type": "checkbox", "id": "hide_description_with_layout", "label": "Hide description when Product Detail Layout metafield is filled", "info": "Reads custom.product_detail_layout on the product.", "default": true },
     { "type": "text", "id": "faq_eyebrow", "label": "FAQ eyebrow (falls back to first collection)" },
     { "type": "text", "id": "faq_title", "label": "FAQ title", "default": "Common Questions" }
   ],
