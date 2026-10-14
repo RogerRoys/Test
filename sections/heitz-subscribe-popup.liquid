@@ -1,0 +1,433 @@
+{%- comment -%}
+  Heitz — Subscribe popup (1f Gold seal)
+  Email signup → shows the first-order discount code in the popup.
+  Add it to the Footer section group so it loads on every page.
+
+  v2 fixes:
+  - Popup is a fixed, scrollable overlay (no vh/dvh, no max-height box) so it no longer
+    jumps when the email field is focused, the keyboard opens/closes, or a button is tapped.
+  - iOS-safe scroll lock (body fixed) so the page behind can't scroll under the popup.
+  - Signup is posted through a hidden iframe (a real browser navigation, not fetch), so
+    Shopify's spam check doesn't bounce the page through /challenge and reload it. Step 2
+    shows in place, once. If Shopify still needs a visible captcha we fall back to a normal
+    submit and reopen on step 2 after the reload.
+{%- endcomment -%}
+
+{%- liquid
+  assign sid = section.id
+  assign code = section.settings.code | default: 'HEITZ10' | upcase
+  assign form_id = 'HzSubForm-' | append: sid
+-%}
+
+{%- if section.settings.enabled -%}
+<div
+  id="HzSub-{{ sid }}"
+  class="hz-sub"
+  data-delay="{{ section.settings.delay }}"
+  data-days="{{ section.settings.days }}"
+  data-mobile="{{ section.settings.show_mobile }}"
+  data-design="{{ request.design_mode }}"
+  aria-hidden="true"
+>
+  <div class="hz-sub__scroll">
+    <div class="hz-sub__box" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="HzSubTitle-{{ sid }}">
+      <button type="button" class="hz-sub__x" data-hz-close aria-label="Close">&times;</button>
+
+      <div class="hz-sub__media">
+        {%- if section.settings.image != blank -%}
+          {{ section.settings.image | image_url: width: 900 | image_tag: loading: 'lazy', widths: '400, 600, 900', sizes: '(max-width: 749px) 100vw, 330px', alt: section.settings.image.alt | escape }}
+        {%- endif -%}
+      </div>
+
+      <div class="hz-sub__body">
+        <span class="hz-sub__seal" aria-hidden="true">
+          <span class="hz-sub__seal-sm">{{ section.settings.seal_top | escape }}</span>
+          <span class="hz-sub__seal-lg">{{ section.settings.seal_big | escape }}</span>
+          <span class="hz-sub__seal-sm">{{ section.settings.seal_bottom | escape }}</span>
+        </span>
+
+        {%- form 'customer', id: form_id, class: 'hz-sub__form', novalidate: 'novalidate' -%}
+          {%- assign done = false -%}
+          {%- if form.posted_successfully? -%}{%- assign done = true -%}{%- endif -%}
+
+          <div class="hz-sub__step" data-step="1" {% if done %}hidden{% endif %}>
+            {%- if section.settings.eyebrow != blank -%}<span class="hz-sub__eyebrow">{{ section.settings.eyebrow | escape }}</span>{%- endif -%}
+            <h2 id="HzSubTitle-{{ sid }}" class="hz-sub__title">{{ section.settings.heading | escape }}</h2>
+            <p class="hz-sub__text">{{ section.settings.text | escape }}</p>
+
+            <input type="hidden" name="contact[tags]" value="newsletter,popup-first-order">
+            <input type="hidden" name="contact[accepts_marketing]" value="true">
+            <input
+              class="hz-sub__input"
+              type="email"
+              name="contact[email]"
+              inputmode="email"
+              autocapitalize="off"
+              spellcheck="false"
+              autocomplete="email"
+              placeholder="{{ section.settings.placeholder | escape }}"
+              aria-label="{{ section.settings.placeholder | escape }}"
+            >
+            <button type="submit" class="hz-sub__btn" data-hz-submit>
+              <span>{{ section.settings.button | escape }}</span>
+            </button>
+            {%- if form.errors -%}
+              <p class="hz-sub__err" data-hz-server-err>{{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}</p>
+            {%- endif -%}
+            <p class="hz-sub__err" data-hz-err hidden role="alert"></p>
+            <button type="button" class="hz-sub__later" data-hz-close>{{ section.settings.later | escape }}</button>
+          </div>
+
+          <div class="hz-sub__step" data-step="2" {% unless done %}hidden{% endunless %}>
+            <h2 class="hz-sub__title">{{ section.settings.done_heading | escape }}</h2>
+            <p class="hz-sub__text">{{ section.settings.done_text | escape }}</p>
+            <div class="hz-sub__code">
+              <span class="hz-sub__code-val" data-hz-code>{{ code }}</span>
+              <button type="button" class="hz-sub__copy" data-hz-copy>Copy</button>
+            </div>
+            <a class="hz-sub__btn" href="{{ section.settings.done_link | default: routes.all_products_collection_url }}">
+              <span>{{ section.settings.done_button | escape }}</span>
+            </a>
+            <p class="hz-sub__note">{{ section.settings.done_note | escape }}</p>
+          </div>
+
+          {%- if done -%}<span data-hz-posted hidden></span>{%- endif -%}
+        {%- endform -%}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #HzSub-{{ sid }} { --hz-gold:#D9B97A; --hz-ink:#1A1B18; --hz-black:#000000; --hz-bronze:#9F6939; --hz-muted:#555555; --hz-line:#CFCFCF; --hz-cream:#FBF7F0;
+    --hz-head: var(--font-heading--family, 'Cabin', sans-serif); --hz-body: var(--font-body--family, 'Jost', sans-serif);
+    position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; margin: 0 !important; padding: 0 !important;
+    transform: none !important; translate: none !important; scale: none !important; contain: none !important; content-visibility: visible !important;
+    z-index: 2147483000; box-sizing: border-box; background: rgba(0,0,0,.45);
+    overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .35s ease, visibility 0s linear .35s;
+    font-family: var(--hz-body); -webkit-text-size-adjust: 100%; }
+  #HzSub-{{ sid }}.is-open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .35s ease; }
+  #HzSub-{{ sid }} .hz-sub__scroll { min-height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  #HzSub-{{ sid }} .hz-sub__box { position: relative; flex: none; width: 780px; max-width: 100%; box-sizing: border-box;
+    background: #FFFFFF; color: #1F1F1F; display: grid; grid-template-columns: 330px minmax(0,1fr); box-shadow: 0 30px 80px rgba(0,0,0,.3);
+    outline: none !important; transform: none !important; scale: none !important; zoom: 1 !important; }
+  #HzSub-{{ sid }}.is-open .hz-sub__box { animation: hzSubPop .5s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes hzSubPop { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
+  /* Theme hover/active/focus effects must never move or resize anything inside the popup */
+  #HzSub-{{ sid }} .hz-sub__box *, #HzSub-{{ sid }} .hz-sub__box *:hover, #HzSub-{{ sid }} .hz-sub__box *:active, #HzSub-{{ sid }} .hz-sub__box *:focus, #HzSub-{{ sid }} .hz-sub__box *:focus-visible { scale: none !important; zoom: 1 !important; }
+  #HzSub-{{ sid }} .hz-sub__input, #HzSub-{{ sid }} .hz-sub__btn, #HzSub-{{ sid }} .hz-sub__copy, #HzSub-{{ sid }} .hz-sub__x, #HzSub-{{ sid }} .hz-sub__later,
+  #HzSub-{{ sid }} .hz-sub__input:hover, #HzSub-{{ sid }} .hz-sub__btn:hover, #HzSub-{{ sid }} .hz-sub__copy:hover, #HzSub-{{ sid }} .hz-sub__later:hover,
+  #HzSub-{{ sid }} .hz-sub__input:active, #HzSub-{{ sid }} .hz-sub__btn:active, #HzSub-{{ sid }} .hz-sub__copy:active, #HzSub-{{ sid }} .hz-sub__x:active, #HzSub-{{ sid }} .hz-sub__later:active,
+  #HzSub-{{ sid }} .hz-sub__input:focus, #HzSub-{{ sid }} .hz-sub__btn:focus, #HzSub-{{ sid }} .hz-sub__copy:focus, #HzSub-{{ sid }} .hz-sub__x:focus, #HzSub-{{ sid }} .hz-sub__later:focus,
+  #HzSub-{{ sid }} .hz-sub__input:focus-visible, #HzSub-{{ sid }} .hz-sub__btn:focus-visible, #HzSub-{{ sid }} .hz-sub__copy:focus-visible, #HzSub-{{ sid }} .hz-sub__x:focus-visible, #HzSub-{{ sid }} .hz-sub__later:focus-visible
+    { transform: none !important; translate: none !important; box-shadow: none !important; outline-offset: 0 !important; }
+  #HzSub-{{ sid }} .hz-sub__btn:focus-visible, #HzSub-{{ sid }} .hz-sub__copy:focus-visible, #HzSub-{{ sid }} .hz-sub__x:focus-visible, #HzSub-{{ sid }} .hz-sub__later:focus-visible { outline: 2px solid var(--hz-bronze) !important; outline-offset: 2px !important; }
+  #HzSub-{{ sid }} .hz-sub__input, #HzSub-{{ sid }} .hz-sub__input:focus, #HzSub-{{ sid }} .hz-sub__input:focus-visible { outline: none !important; border-width: 1px !important; font-size: 16px !important; height: 50px !important; min-height: 50px !important; line-height: 48px !important; padding: 0 16px !important; margin: 0 !important; }
+  html.hz-sub-lock { overflow: hidden !important; }
+  body.hz-sub-lock-body { position: fixed !important; left: 0 !important; right: 0 !important; width: 100% !important; overflow: hidden !important; }
+  #HzSub-{{ sid }} .hz-sub__x { position: absolute; top: 8px; right: 10px; z-index: 3; width: 44px; height: 44px; border: 0; background: none; padding: 0; margin: 0;
+    font-size: 26px; font-weight: 300; line-height: 1; color: #1F1F1F; opacity: .7; cursor: pointer; transition: opacity .3s ease; }
+  #HzSub-{{ sid }} .hz-sub__x:hover { opacity: 1; }
+  #HzSub-{{ sid }} .hz-sub__media { position: relative; min-height: 100%; background: #E8DCC6; }
+  #HzSub-{{ sid }} .hz-sub__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; margin: 0; }
+  #HzSub-{{ sid }} .hz-sub__body { min-width: 0; padding: 48px 44px 36px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 16px; }
+  #HzSub-{{ sid }} .hz-sub__seal { width: 100px; height: 100px; border-radius: 50%; background: var(--hz-gold); color: var(--hz-ink); flex: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; font-family: var(--hz-head); font-weight: 600;
+    box-shadow: 0 0 0 6px #FFFFFF, 0 0 0 7px var(--hz-gold); }
+  #HzSub-{{ sid }} .hz-sub__seal-sm { font-size: 9px; letter-spacing: .16em; text-transform: uppercase; }
+  #HzSub-{{ sid }} .hz-sub__seal-lg { font-size: 30px; margin: 6px 0; }
+  #HzSub-{{ sid }} .hz-sub__form, #HzSub-{{ sid }} .hz-sub__step { width: 100%; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  #HzSub-{{ sid }} .hz-sub__step[hidden] { display: none !important; }
+  #HzSub-{{ sid }} .hz-sub__step.is-in { animation: hzSubIn .45s ease-out both; }
+  @keyframes hzSubIn { from { opacity: 0; } to { opacity: 1; } }
+  #HzSub-{{ sid }} .hz-sub__eyebrow { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--hz-bronze); }
+  #HzSub-{{ sid }} .hz-sub__title { margin: 0; font-family: var(--hz-head); font-weight: 600; font-size: 32px; line-height: 1.15; color: var(--hz-black); }
+  #HzSub-{{ sid }} .hz-sub__text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--hz-muted); }
+  #HzSub-{{ sid }} .hz-sub__input { width: 100%; box-sizing: border-box; border: 1px solid var(--hz-line); background: #FFFFFF; border-radius: 0;
+    font: inherit; color: #1F1F1F; text-align: center; -webkit-appearance: none; appearance: none; transition: border-color .3s ease; }
+  #HzSub-{{ sid }} .hz-sub__input:focus { border-color: #1F1F1F; }
+  #HzSub-{{ sid }} .hz-sub__input::placeholder { color: #85838F; opacity: 1; transition: opacity .3s ease; }
+  #HzSub-{{ sid }} .hz-sub__input:focus::placeholder { opacity: 0; }
+  #HzSub-{{ sid }} .hz-sub__box, #HzSub-{{ sid }} .hz-sub__box * { touch-action: manipulation; }
+  #HzSub-{{ sid }} .hz-sub__btn { width: 100%; box-sizing: border-box; min-height: 50px; margin: 0; border: 0; border-radius: 0; background: var(--hz-black); color: #FFFFFF; display: flex; align-items: center; justify-content: center;
+    font: inherit; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; cursor: pointer; transition: background .3s ease; }
+  #HzSub-{{ sid }} .hz-sub__btn:hover { background: var(--hz-bronze); color: #FFFFFF; }
+  #HzSub-{{ sid }} .hz-sub__btn.is-busy { opacity: .6; pointer-events: none; }
+  #HzSub-{{ sid }} .hz-sub__later { border: 0; background: none; padding: 4px; margin: 0; font: inherit; font-size: 13px; color: var(--hz-muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  #HzSub-{{ sid }} .hz-sub__err { margin: 0; font-size: 13px; line-height: 1.4; color: #B3261E; }
+  #HzSub-{{ sid }} .hz-sub__err[hidden] { display: none !important; }
+  #HzSub-{{ sid }} .hz-sub__err[data-hz-err] { min-height: 18px; }
+  #HzSub-{{ sid }} .hz-sub__err[data-hz-err][hidden] { display: block !important; visibility: hidden; }
+  #HzSub-{{ sid }} .hz-sub__code { width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    border: 1px dashed var(--hz-bronze); background: var(--hz-cream); padding: 12px 12px 12px 18px; }
+  #HzSub-{{ sid }} .hz-sub__code-val { font-family: var(--hz-head); font-weight: 600; font-size: 24px; letter-spacing: .22em; color: var(--hz-black); }
+  #HzSub-{{ sid }} .hz-sub__copy { flex: none; min-height: 40px; padding: 0 16px; margin: 0; border: 0; border-radius: 0; background: #1F1F1F; color: #FFFFFF;
+    font: inherit; font-size: 11px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; cursor: pointer; transition: background .3s ease; }
+  #HzSub-{{ sid }} .hz-sub__copy:hover { background: var(--hz-bronze); }
+  #HzSub-{{ sid }} .hz-sub__note { margin: 0; font-size: 12px; color: #85838F; }
+  @media (max-width: 749px) {
+    /* Anchor to the top on phones so the box stays put when the keyboard opens/closes (JS sets the top padding once). */
+    #HzSub-{{ sid }} .hz-sub__scroll { align-items: flex-start; padding: 16px 16px 32px; }
+    #HzSub-{{ sid }} .hz-sub__box { grid-template-columns: minmax(0,1fr); width: 420px; max-width: 100%; }
+    #HzSub-{{ sid }} .hz-sub__media { min-height: 170px; }
+    #HzSub-{{ sid }} .hz-sub__body { padding: 30px 22px 24px; }
+    #HzSub-{{ sid }} .hz-sub__seal { width: 84px; height: 84px; }
+    #HzSub-{{ sid }} .hz-sub__seal-lg { font-size: 26px; }
+    #HzSub-{{ sid }} .hz-sub__title { font-size: 26px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #HzSub-{{ sid }}, #HzSub-{{ sid }} .hz-sub__box, #HzSub-{{ sid }} .hz-sub__step.is-in { transition: none; animation: none !important; }
+  }
+</style>
+
+<script>
+  (function () {
+    var SID = '{{ sid }}';
+    var KEY = 'hz-sub-popup', SUBS = 'hz-sub-done';
+    var FRAME = 'hzSubFrame' + SID.replace(/[^a-zA-Z0-9]/g, '');
+
+    // Never run inside our own hidden signup iframe.
+    if (/^hzSubFrame/.test(window.name)) return;
+
+    // Find this section's own popup (the script sits right after it) and drop duplicates.
+    var me = document.currentScript, holder = me && me.parentNode;
+    var root = holder ? holder.querySelector('#HzSub-' + SID) : null;
+    if (!root) root = document.getElementById('HzSub-' + SID);
+    if (!root) return;
+    window.HzSub = window.HzSub || {};
+    if (window.HzSub[SID]) { root.remove(); return; }
+    window.HzSub[SID] = true;
+
+    // Move to <body> so theme wrappers (transform / contain / content-visibility) can't break position:fixed.
+    if (root.parentElement !== document.body) document.body.appendChild(root);
+    document.addEventListener('shopify:section:unload', function (e) {
+      if (e.detail && e.detail.sectionId === SID) { if (isOpen) close(false); root.remove(); delete window.HzSub[SID]; }
+    });
+
+    var design = root.dataset.design === 'true';
+    var scroll = root.querySelector('.hz-sub__scroll'), box = root.querySelector('.hz-sub__box');
+    var form = root.querySelector('form');
+    var s1 = root.querySelector('[data-step="1"]'), s2 = root.querySelector('[data-step="2"]');
+    var input = form.querySelector('.hz-sub__input'), err = form.querySelector('[data-hz-err]'), btn = form.querySelector('[data-hz-submit]');
+    var mq = window.matchMedia('(max-width: 749px)');
+    var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isOpen = false, lastFocus = null, savedY = 0, lastW = window.innerWidth, sending = false;
+    try { root.inert = true; } catch (e) {}
+
+    /* ---------- position / scroll lock ---------- */
+    function place() {
+      if (!mq.matches) { scroll.style.paddingTop = ''; return; }
+      var free = root.clientHeight - box.offsetHeight - 32;
+      scroll.style.paddingTop = Math.max(16, Math.round(free / 2)) + 'px';
+    }
+    function lock() {
+      var sb = window.innerWidth - document.documentElement.clientWidth;
+      savedY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      document.documentElement.classList.add('hz-sub-lock');
+      if (sb > 0) document.body.style.paddingRight = sb + 'px';
+      if (isIOS) { document.body.classList.add('hz-sub-lock-body'); document.body.style.top = -savedY + 'px'; }
+    }
+    function unlock() {
+      document.documentElement.classList.remove('hz-sub-lock');
+      document.body.style.paddingRight = '';
+      if (isIOS) { document.body.classList.remove('hz-sub-lock-body'); document.body.style.top = ''; window.scrollTo(0, savedY); }
+    }
+    window.addEventListener('resize', function () {
+      // Only re-place on real width changes (rotation), not on keyboard open/close.
+      if (window.innerWidth !== lastW) { lastW = window.innerWidth; if (isOpen) place(); }
+    });
+
+    /* ---------- open / close ---------- */
+    function open() {
+      if (isOpen) return;
+      isOpen = true;
+      lastFocus = document.activeElement;
+      try { root.inert = false; } catch (e) {}
+      place();
+      root.scrollTop = 0;
+      root.classList.add('is-open'); root.setAttribute('aria-hidden', 'false');
+      lock();
+      setTimeout(function () { if (isOpen) try { box.focus({ preventScroll: true }); } catch (e) {} }, 300);
+    }
+    function close(remember) {
+      if (!isOpen) return;
+      isOpen = false;
+      root.classList.remove('is-open'); root.setAttribute('aria-hidden', 'true');
+      try { root.inert = true; } catch (e) {}
+      unlock();
+      if (remember !== false && !design) { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {} }
+      if (lastFocus && lastFocus.focus && document.contains(lastFocus)) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+    }
+    function showCode() {
+      if (!s2.hidden) return; // already on step 2 — never run twice
+      s1.hidden = true; s2.hidden = false; s2.classList.add('is-in');
+      if (!design) { try { localStorage.setItem(SUBS, '1'); } catch (e) {} }
+      if (isOpen) { place(); root.scrollTop = 0; }
+    }
+
+    // Backdrop click (press and release both outside the box) + close buttons.
+    var downOn = null;
+    root.addEventListener('pointerdown', function (e) { downOn = e.target; });
+    root.addEventListener('click', function (e) {
+      if (e.target.closest('[data-hz-close]')) { close(); return; }
+      if ((e.target === scroll || e.target === root) && downOn === e.target) close();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isOpen) { e.preventDefault(); close(); }
+    });
+    root.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var items = Array.prototype.filter.call(
+        box.querySelectorAll('button, a[href], input:not([type="hidden"])'),
+        function (el) { return !el.disabled && el.offsetParent !== null; }
+      );
+      if (!items.length) return;
+      var first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === box)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    /* ---------- copy code ---------- */
+    var copyBtn = root.querySelector('[data-hz-copy]');
+    copyBtn.addEventListener('click', function () {
+      var code = root.querySelector('[data-hz-code]').textContent.trim();
+      var done = function () { copyBtn.textContent = 'Copied ✓'; setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1600); };
+      if (navigator.clipboard) navigator.clipboard.writeText(code).then(done, done); else done();
+    });
+
+    /* ---------- signup ---------- */
+    // Shopify sends the browser back to `return_to` after the post. For the hidden-iframe
+    // path we point it at a tiny JSON route; for a visible fallback submit we point it at this page.
+    var retInput = document.createElement('input');
+    retInput.type = 'hidden'; retInput.name = 'return_to'; form.appendChild(retInput);
+
+    var frame = null;
+    function makeFrame() {
+      var fr = document.createElement('iframe');
+      fr.name = FRAME; fr.title = ''; fr.tabIndex = -1; fr.setAttribute('aria-hidden', 'true');
+      fr.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;border:0;opacity:0;pointer-events:none;';
+      document.body.appendChild(fr);
+      return fr;
+    }
+    frame = makeFrame(); // created early so its initial about:blank load is long gone by the time we submit
+
+    function visibleSubmit() {
+      // Real page submit (Shopify may show a captcha). We come back to this page with
+      // ?customer_posted=true and reopen straight on step 2.
+      retInput.value = location.pathname + location.search;
+      form.target = '_self';
+      form.submit();
+    }
+    function send() {
+      sending = true; btn.classList.add('is-busy');
+      var fr = frame || (frame = makeFrame()), done = false, timer = null;
+      function finish(ok) {
+        if (done) return;
+        done = true; clearTimeout(timer); fr.removeEventListener('load', onLoad);
+        try { fr.remove(); } catch (e) {}
+        frame = null;
+        sending = false; btn.classList.remove('is-busy');
+        if (ok) showCode(); else visibleSubmit();
+      }
+      function onLoad() {
+        var href = '';
+        try { href = String(fr.contentWindow.location.href || ''); } catch (e) { href = ''; }
+        if (href === 'about:blank') return;
+        if (/customer_posted=true/.test(href)) { finish(true); return; }
+        if (/\/challenge/.test(href)) {
+          // Shopify's invisible spam check is running inside the frame; give it time to pass.
+          clearTimeout(timer); timer = setTimeout(function () { finish(false); }, 8000);
+          return;
+        }
+        finish(false);
+      }
+      fr.addEventListener('load', onLoad);
+      timer = setTimeout(function () { finish(false); }, 15000);
+      retInput.value = '/cart.js?_fd=0';
+      form.target = FRAME;
+      form.submit();
+    }
+
+    input.addEventListener('input', function () { err.hidden = true; });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (sending) return;
+      var email = (input.value || '').trim();
+      input.value = email;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        err.textContent = 'Please enter a valid email address.'; err.hidden = false;
+        try { input.focus({ preventScroll: true }); } catch (x) {}
+        return;
+      }
+      err.hidden = true;
+      send();
+    });
+
+    /* ---------- when to open ---------- */
+    var posted = !!root.querySelector('[data-hz-posted]') || /customer_posted=true/.test(location.search);
+    var serverErr = !!root.querySelector('[data-hz-server-err]');
+    if (posted || serverErr) {
+      if (posted) showCode();
+      open();
+      // Clean the URL so a refresh doesn't reopen the popup.
+      try {
+        var u = new URL(location.href);
+        if (u.searchParams.has('customer_posted')) {
+          u.searchParams.delete('customer_posted');
+          history.replaceState(history.state, '', u.pathname + u.search);
+        }
+      } catch (e) {}
+      return;
+    }
+
+    if (design) {
+      document.addEventListener('shopify:section:select', function (e) { if (e.detail && e.detail.sectionId === SID) open(); });
+      document.addEventListener('shopify:section:deselect', function (e) { if (e.detail && e.detail.sectionId === SID) close(false); });
+      open();
+      return;
+    }
+
+    if (mq.matches && root.dataset.mobile !== 'true') return;
+    try {
+      if (localStorage.getItem(SUBS)) return;
+      var last = +localStorage.getItem(KEY) || 0, days = +root.dataset.days || 7;
+      if (last && Date.now() - last < days * 864e5) return;
+    } catch (e) {}
+    setTimeout(open, (+root.dataset.delay || 6) * 1000);
+  })();
+</script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Heitz subscribe popup",
+  "class": "heitz-subscribe-popup",
+  "settings": [
+    { "type": "checkbox", "id": "enabled", "label": "Show popup", "default": true },
+    { "type": "range", "id": "delay", "label": "Open after (seconds)", "min": 1, "max": 30, "step": 1, "default": 6 },
+    { "type": "range", "id": "days", "label": "Show again after closing (days)", "min": 1, "max": 30, "step": 1, "default": 7 },
+    { "type": "checkbox", "id": "show_mobile", "label": "Show on mobile", "default": true },
+    { "type": "image_picker", "id": "image", "label": "Image" },
+    { "type": "header", "content": "Gold seal" },
+    { "type": "text", "id": "seal_top", "label": "Seal top", "default": "Get" },
+    { "type": "text", "id": "seal_big", "label": "Seal amount", "default": "10%" },
+    { "type": "text", "id": "seal_bottom", "label": "Seal bottom", "default": "Off" },
+    { "type": "header", "content": "Step 1 · Email" },
+    { "type": "text", "id": "eyebrow", "label": "Label", "default": "For subscribers" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Subscribe & save" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Subscribe to the Heitz list and get 10% off your first order. Your code appears here as soon as you sign up." },
+    { "type": "text", "id": "placeholder", "label": "Email placeholder", "default": "Email address" },
+    { "type": "text", "id": "button", "label": "Button", "default": "Unlock my 10%" },
+    { "type": "text", "id": "later", "label": "Close link", "default": "Maybe later" },
+    { "type": "header", "content": "Step 2 · Code" },
+    { "type": "text", "id": "code", "label": "Discount code", "default": "HEITZ10", "info": "Create this code in Shopify admin → Discounts first." },
+    { "type": "text", "id": "done_heading", "label": "Heading", "default": "10% off your first order" },
+    { "type": "textarea", "id": "done_text", "label": "Text", "default": "Welcome to Heitz. Use this code at checkout on your first order." },
+    { "type": "text", "id": "done_button", "label": "Button", "default": "Start shopping" },
+    { "type": "url", "id": "done_link", "label": "Button link" },
+    { "type": "text", "id": "done_note", "label": "Small note", "default": "We have also emailed it to you." }
+  ],
+  "presets": [{ "name": "Heitz subscribe popup" }]
+}
+{% endschema %}
